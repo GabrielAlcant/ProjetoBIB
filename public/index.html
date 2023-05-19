@@ -4,15 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload de Planilha</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
   <style>
+    *{
+      box-sizing: border-box;
+      margin: 0;
+    }
+    html {
+      height: 100%;
+    }
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
       padding: 20px;
+      background-color: whitesmoke;
+      background-image: url("lyonnette.png");
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      height: 100%;
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 20px;
     }
 
     .upload-form {
@@ -34,7 +49,7 @@
       margin-top: 5px;
     }
 
-    .upload-form input[type="submit"] {
+    /* .upload-form input[type="submit"] {
       display: block;
       margin-top: 20px;
       padding: 10px 20px;
@@ -47,7 +62,8 @@
 
     .upload-form input[type="submit"]:hover {
       background-color: #45a049;
-    }
+    } */
+    
   </style>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -66,11 +82,15 @@
 <body>
   <h1>Upload de Planilha</h1>
   <div class="upload-form">
-    <form action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
-      <label for="planilha">Selecione uma planilha:</label>
-      <input type="file" name="planilha" id="planilha" accept=".xlsx" required>
-      <input type="submit" value="Enviar">
+    <form action="/upload" method="post" class="d-sm-flex flex-column" enctype="multipart/form-data" id="upload-form">
+      <label for="planilha" class="form-label">Selecione uma planilha:</label>
+      <input type="file" name="planilha" class="form-control form-control-lg" id="planilha" accept=".xlsx" required>
+      <input type="submit" value="Enviar" class="btn btn-success p-2 mt-3">
     </form>
   </div>
+
+  <script src="js/jquery.min.js"></script>
+  <script src="js/popper.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
 </body>
 </html>
