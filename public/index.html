@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload de Planilha</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .upload-form {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #f5f5f5;
+    }
+
+    .upload-form label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .upload-form input[type="file"] {
+      display: block;
+      margin-top: 5px;
+    }
+
+    .upload-form input[type="submit"] {
+      display: block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .upload-form input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('upload-form');
+      const fileInput = document.getElementById('planilha');
+
+      form.addEventListener('submit', function(event) {
+        if (!fileInput.value) {
+          event.preventDefault();
+          alert('Por favor, selecione um arquivo antes de enviar.');
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Upload de Planilha</h1>
+  <div class="upload-form">
+    <form action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
+      <label for="planilha">Selecione uma planilha:</label>
+      <input type="file" name="planilha" id="planilha" accept=".xlsx" required>
+      <input type="submit" value="Enviar">
+    </form>
+  </div>
+</body>
+</html>
