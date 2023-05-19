@@ -1,5 +1,6 @@
-const xlsx = require('xlsx-populate'); // Importa a biblioteca xlsx-populate para lidar com arquivos XLSX
+const xlsx = require('xlsx-populate'); // Importa a biblioteca xlsx-populate para trabalhar com arquivos Excel
 const { createObjectCsvWriter } = require('csv-writer'); // Importa a biblioteca csv-writer para criar arquivos CSV
+const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite para tratar caracteres especiais
 
 function extrairDados(planilhaBuffer) {
   return new Promise((resolve, reject) => {
@@ -7,28 +8,29 @@ function extrairDados(planilhaBuffer) {
       .fromDataAsync(planilhaBuffer) // Carrega o arquivo Excel a partir do buffer de dados
       .then((workbook) => {
         const worksheet = workbook.sheet(0); // Obtém a primeira planilha do arquivo
-        const data = worksheet.usedRange().value(); // Obtém os dados utilizados na planilha
+        const data = worksheet.usedRange().value(); // Obtém os valores da planilha
 
         const registros = {
-          docente: [], // Array para armazenar os registros de docentes
-          discente: [], // Array para armazenar os registros de discentes
-          outros: [], // Array para armazenar os registros de outros
+          docente: [], // Array para armazenar registros do tipo docente
+          discente: [], // Array para armazenar registros do tipo discente
+          outros: [], // Array para armazenar registros de outros tipos
         };
 
         for (let i = 1; i < data.length; i++) {
           const email = data[i][0]; // Obtém o valor da coluna de email
-          const primeiroNome = data[i][1]; // Obtém o valor da coluna de primeiro nome
-          const ultimoNome = data[i][2]; // Obtém o valor da coluna de último nome
+          const primeiroNome = iconv.decode(data[i][1], 'latin1'); // Obtém o valor da coluna de primeiro nome e faz a decodificação de caracteres especiais
+          const ultimoNome = iconv.decode(data[i][2], 'latin1'); // Obtém o valor da coluna de último nome e faz a decodificação de caracteres especiais
           const funcao = data[i][3]; // Obtém o valor da coluna de função
           let cpf = data[i][4]; // Obtém o valor da coluna de CPF
-
+          // Tratamento do CPF
           if (cpf) {
             if (typeof cpf !== 'string') {
-              cpf = String(cpf); // Converte o CPF para string, caso não seja do tipo string
+              // Verifica se é ou nao uma String
+              cpf = String(cpf);
             }
-            cpf = cpf.replace(/[^\d]/g, '').padStart(11, '0'); // Remove caracteres não numéricos e preenche com zeros à esquerda para ter um total de 11 dígitos
+            cpf = cpf.replace(/[^\d]/g, '').padStart(11, '0'); // Remove caracteres não numéricos do CPF e preenche com zeros à esquerda até completar 11 dígitos
           } else {
-            cpf = '00000000000'; // Caso o CPF não esteja presente na planilha, atribui o valor "00000000000"
+            cpf = '00000000000'; // Caso o CPF esteja vazio, atribui um valor padrão de 11 zeros
           }
 
           const registro = {
@@ -39,17 +41,17 @@ function extrairDados(planilhaBuffer) {
           };
 
           if (funcao === 'docente') {
-            registros.docente.push(registro); // Adiciona o registro à lista de docentes
+            registros.docente.push(registro); // Adiciona o registro ao array de registros do tipo docente
           } else if (funcao === 'discente') {
-            registros.discente.push(registro); // Adiciona o registro à lista de discentes
+            registros.discente.push(registro); // Adiciona o registro ao array de registros do tipo discente
           } else {
-            registros.outros.push(registro); // Adiciona o registro à lista de outros
+            registros.outros.push(registro); // Adiciona o registro ao array de registros de outros tipos
           }
         }
 
-        resolve(registros); // Retorna os registros extraídos
+        resolve(registros); // Retorna os registros extraídos da planilha
       })
-      .catch((error) => reject(error)); // Rejeita a Promise em caso de erro na leitura da planilha
+      .catch((error) => reject(error)); // Rejeita a promessa em caso de erro
   });
 }
 
