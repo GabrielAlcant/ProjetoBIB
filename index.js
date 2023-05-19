@@ -4,6 +4,8 @@ const { extrairDados, criarCSV } = require('./routes/extractData');  // Importa 
 
 const app = express();  // Cria uma instância do aplicativo Express
 
+app.use(express.static('public'))
+
 // Configuração do Multer para lidar com o upload de arquivos
 const storage = multer.memoryStorage();  // Armazena temporariamente os arquivos em memória
 const upload = multer({ storage });
