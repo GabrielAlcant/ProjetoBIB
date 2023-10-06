@@ -1,53 +1,58 @@
-const express = require('express');  // Importa a biblioteca Express para criar o servidor web
-const multer = require('multer');  // Importa a biblioteca Multer para lidar com o upload de arquivos
-const { extrairDados, criarCSV } = require('./routes/extractData');  // Importa as funções de extração e criação de CSV do arquivo extractData.js
+const express = require('express'); // Importa a biblioteca Express para criar o servidor web
+const multer = require('multer'); // Importa a biblioteca Multer para lidar com o upload de arquivos
+const { extrairDados, criarCSV } = require('./routes/extractData'); // Importa as funções de extração e criação de CSV do arquivo extractData.js
+const fs = require('fs'); // Importa a biblioteca fs (sistema de arquivos) para operações de arquivo
+const archiver = require('archiver'); // Importa a biblioteca Archiver para criar arquivos ZIP
 
-const app = express();  // Cria uma instância do aplicativo Express
+const app = express(); // Cria uma instância do aplicativo Express
 
-app.use(express.static('public'))
+app.use(express.static('public')); // Configura o servidor para servir arquivos estáticos na pasta 'public'
 
-// Configuração do Multer para lidar com o upload de arquivos
-const storage = multer.memoryStorage();  // Armazena temporariamente os arquivos em memória
-const upload = multer({ storage });
+const storage = multer.memoryStorage(); // Configura o Multer para armazenar temporariamente os arquivos em memória
+const upload = multer({ storage }); // Cria uma instância do Multer com a configuração de armazenamento em memória
 
-// Rota inicial do servidor
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');  // Envia o arquivo HTML da página inicial
+  res.sendFile(__dirname + '/public/index.html'); // Rota inicial do servidor que envia o arquivo HTML da página inicial
 });
 
-// Rota para lidar com o upload do arquivo
-app.post('/upload', upload.single('planilha'), (req, res) => {
+app.post('/upload', upload.single('planilha'), async (req, res) => {
   if (!req.file) {
-    return res.status(400).send('Nenhum arquivo selecionado.');  // Retorna um erro se nenhum arquivo foi selecionado
+    return res.status(400).send('Nenhum arquivo selecionado.'); // Verifica se nenhum arquivo foi selecionado e retorna um erro, se aplicável
   }
 
-  const planilha = req.file.buffer;  // Obtém o buffer do arquivo Excel enviado
+  const planilha = req.file.buffer; // Obtém o buffer do arquivo Excel enviado
 
-  extrairDados(planilha)
-    .then(registros => {
-      const tipos = Object.keys(registros);  // Obtém os tipos de registros (docente, discente, outros)
+  try {
+    const registros = await extrairDados(planilha); // Extrai dados da planilha Excel
+    const tipos = Object.keys(registros); // Obtém os tipos de registros (docente, discente, outros)
 
-      // Para cada tipo de registro, cria o arquivo CSV correspondente e envia para o download
-      const promessasCSV = tipos.map(tipo => criarCSV(registros, tipo));
+    const arquivosCSV = await Promise.all(
+      tipos.map((tipo) => criarCSV(registros, tipo))
+    ); // Cria arquivos CSV temporários para cada tipo de registro e aguarda a conclusão
 
-      Promise.all(promessasCSV)
-        .then(arquivosCSV => {
-          arquivosCSV.forEach(arquivo => {
-            res.download(arquivo);  // Faz o download do arquivo CSV
-          });
-        })
-        .catch(error => {
-          console.error('Erro ao criar os arquivos CSV:', error);
-          res.status(500).send('Erro ao processar a planilha.');
-        });
-    })
-    .catch(error => {
-      console.error('Erro ao extrair dados:', error);
-      res.status(500).send('Erro ao processar a planilha.');
+    const zip = archiver('zip'); // Cria um arquivo ZIP para armazenar os arquivos CSV
+
+    // Adiciona os arquivos CSV ao arquivo ZIP
+    arquivosCSV.forEach((arquivo) => {
+      const stream = fs.createReadStream(arquivo); // Cria um fluxo de leitura para o arquivo CSV
+      zip.append(stream, { name: arquivo }); // Adiciona o fluxo de leitura ao arquivo ZIP com um nome correspondente
     });
+
+    // Configura a resposta HTTP para fazer o download do arquivo ZIP
+    res.attachment('planilhas.zip');
+    zip.pipe(res);
+    zip.finalize();
+
+    // Remove os arquivos CSV temporários após o envio do ZIP
+    arquivosCSV.forEach((arquivo) => {
+      fs.unlinkSync(arquivo); // Remove o arquivo CSV temporário
+    });
+  } catch (error) {
+    console.error('Erro ao processar a planilha:', error);
+    res.status(500).send('Erro ao processar a planilha.'); // Lida com erros durante o processamento da planilha
+  }
 });
 
-// Inicia o servidor na porta 3000
 app.listen(3000, () => {
-  console.log('Servidor iniciado na porta 3000.');
+  console.log('Servidor iniciado na porta 3000.'); // Inicia o servidor na porta 3000
 });
