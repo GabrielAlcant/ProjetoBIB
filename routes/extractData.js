@@ -1,84 +1,117 @@
-const xlsx = require('xlsx-populate'); // Importa a biblioteca xlsx-populate para trabalhar com arquivos Excel
-const { createObjectCsvWriter } = require('csv-writer'); // Importa a biblioteca csv-writer para criar arquivos CSV
-const iconv = require('iconv-lite'); // Importa a biblioteca iconv-lite para tratar caracteres especiais
+// Importa as bibliotecas necessárias
+const xlsx = require('xlsx-populate');
+const fs = require('fs');
+const removeAccents = require('remove-accents');
 
-function extrairDados(planilhaBuffer) {
-  return new Promise((resolve, reject) => {
-    xlsx
-      .fromDataAsync(planilhaBuffer) // Carrega o arquivo Excel a partir do buffer de dados
-      .then((workbook) => {
-        const worksheet = workbook.sheet(0); // Obtém a primeira planilha do arquivo
-        const data = worksheet.usedRange().value(); // Obtém os valores da planilha
+// Função para extrair dados de uma planilha Excel
+async function extrairDados(planilhaBuffer) {
+  try {
+    // Abre a planilha Excel a partir do buffer fornecido
+    const workbook = await xlsx.fromDataAsync(planilhaBuffer);
+    const worksheet = workbook.sheet(0);
 
-        const registros = {
-          docente: [], // Array para armazenar registros do tipo docente
-          discente: [], // Array para armazenar registros do tipo discente
-          outros: [], // Array para armazenar registros de outros tipos
-        };
+    // Obtém todos os valores da planilha
+    const data = worksheet.usedRange().value();
 
-        for (let i = 1; i < data.length; i++) {
-          const email = data[i][0]; // Obtém o valor da coluna de email
-          const primeiroNome = iconv.decode(data[i][1], 'latin1'); // Obtém o valor da coluna de primeiro nome e faz a decodificação de caracteres especiais
-          const ultimoNome = iconv.decode(data[i][2], 'latin1'); // Obtém o valor da coluna de último nome e faz a decodificação de caracteres especiais
-          const funcao = data[i][3]; // Obtém o valor da coluna de função
-          let cpf = data[i][4]; // Obtém o valor da coluna de CPF
-          // Tratamento do CPF
-          if (cpf) {
-            if (typeof cpf !== 'string') {
-              // Verifica se é ou nao uma String
-              cpf = String(cpf);
-            }
-            cpf = cpf.replace(/[^\d]/g, '').padStart(11, '0'); // Remove caracteres não numéricos do CPF e preenche com zeros à esquerda até completar 11 dígitos
-          } else {
-            cpf = '00000000000'; // Caso o CPF esteja vazio, atribui um valor padrão de 11 zeros
-          }
+    // Cria um objeto para armazenar os registros
+    const registros = {
+      docente: [],
+      discente: [],
+      outros: [],
+    };
 
-          const registro = {
-            Email: email,
-            'Primeiro Nome': primeiroNome,
-            'Último Nome': ultimoNome,
-            CPF: cpf,
-          };
+    // Itera sobre os dados da planilha
+    for (let i = 0; i < data.length; i++) {
+      const email = data[i][0];
+      const primeiroNome = removeAccents(data[i][1]).toUpperCase();
+      const ultimoNome = removeAccents(data[i][2]).toUpperCase();
+      const funcao = data[i][3];
+      let cpf = data[i][4];
 
-          if (funcao === 'docente') {
-            registros.docente.push(registro); // Adiciona o registro ao array de registros do tipo docente
-          } else if (funcao === 'discente') {
-            registros.discente.push(registro); // Adiciona o registro ao array de registros do tipo discente
-          } else {
-            registros.outros.push(registro); // Adiciona o registro ao array de registros de outros tipos
-          }
+      // Verifica se o CPF está presente
+      if (cpf) {
+        // Remove todos os caracteres não numéricos do CPF
+        cpf = String(cpf).replace(/\D/g, '');
+
+        // Verifica o comprimento atual do CPF
+        const cpfLength = cpf.length;
+
+        // Se o CPF tem menos de 11 dígitos, adiciona zeros à frente até que tenha 11 dígitos
+        if (cpfLength < 11) {
+          cpf = '0'.repeat(11 - cpfLength) + cpf;
         }
 
-        resolve(registros); // Retorna os registros extraídos da planilha
-      })
-      .catch((error) => reject(error)); // Rejeita a promessa em caso de erro
-  });
+        // Pega os 6 primeiros dígitos do CPF
+        cpf = cpf.slice(0, 6);
+      } else {
+        // Se o CPF não estiver presente, define como '000000'
+        cpf = '000000';
+      }
+
+      // Cria um registro com os dados extraídos
+      const registro = {
+        Email: email,
+        'Primeiro Nome': primeiroNome,
+        'Último Nome': ultimoNome,
+        CPF: cpf,
+      };
+
+      // Classifica o registro com base na função e o armazena na categoria apropriada
+      if (funcao.match(/^docente$/i)) {
+        registros.docente.push(registro);
+      } else if (funcao.match(/^discente$/i)) {
+        registros.discente.push(registro);
+      } else {
+        registros.outros.push(registro);
+      }
+    }
+
+    // Retorna o objeto com os registros
+    return registros;
+  } catch (error) {
+    // Trata erros e os registra no console
+    console.error('Erro ao extrair dados:', error);
+    throw error;
+  }
 }
 
+// Função para criar um arquivo CSV a partir dos registros
 function criarCSV(registros, tipo) {
-  const nomeArquivo = `${tipo}.csv`; // Define o nome do arquivo com base no tipo de registro
+  // Define o nome do arquivo com base no tipo
+  const nomeArquivo = `${tipo}.csv`;
 
-  const csvWriter = createObjectCsvWriter({
-    path: nomeArquivo, // Define o caminho do arquivo
-    header: [
-      { id: 'Email', title: 'Email' },
-      { id: 'Primeiro Nome', title: 'Primeiro Nome' },
-      { id: 'Último Nome', title: 'Último Nome' },
-      { id: 'CPF', title: 'CPF' },
-    ], // Define o cabeçalho do arquivo CSV
+  // Cria um fluxo de gravação para o arquivo
+  const stream = fs.createWriteStream(nomeArquivo);
+
+  // Itera sobre os registros do tipo especificado e escreve no arquivo CSV
+  registros[tipo].forEach((registro) => {
+    const primeiroNome = registro['Primeiro Nome'];
+    const ultimoNome = registro['Último Nome'];
+    // Certifica-se de que os nomes sejam decodificados ao escrever no arquivo
+    stream.write(
+      `${registro.Email},${primeiroNome},${ultimoNome},${registro.CPF}\n`
+    );
   });
 
-  return csvWriter
-    .writeRecords(registros[tipo]) // Escreve os registros do tipo especificado no arquivo CSV
-    .then(() => {
-      console.log(`Arquivo ${nomeArquivo} criado com sucesso.`); // Exibe uma mensagem de sucesso
-      return nomeArquivo; // Retorna o nome do arquivo criado
-    })
-    .catch((error) => {
-      console.error(`Erro ao criar o arquivo ${nomeArquivo}:`, error); // Exibe uma mensagem de erro, caso ocorra algum problema na criação do arquivo
+  // Fecha o fluxo de gravação
+  stream.end();
+
+  // Retorna uma promessa que será resolvida quando a gravação estiver completa
+  return new Promise((resolve, reject) => {
+    stream.on('finish', () => {
+      console.log(`Arquivo ${nomeArquivo} criado com sucesso.`);
+      resolve(nomeArquivo);
     });
+
+    // Lida com erros de gravação
+    stream.on('error', (error) => {
+      console.error(`Erro ao criar o arquivo ${nomeArquivo}:`, error);
+      reject(error);
+    });
+  });
 }
 
+// Exporta as funções para uso em outros módulos
 module.exports = {
   extrairDados,
   criarCSV,
