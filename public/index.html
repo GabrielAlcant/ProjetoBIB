@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Upload de Planilha</title>
   <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/bootstrap-icons.min.css">
   <style>
     *{
       box-sizing: border-box;
@@ -31,8 +32,8 @@
     }
 
     .upload-form {
-      max-width: 400px;
-      margin: 0 auto;
+      /* max-width: 400px; */
+      /* margin: 0 auto; */
       padding: 20px;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -47,6 +48,26 @@
     .upload-form input[type="file"] {
       display: block;
       margin-top: 5px;
+    }
+
+    .remove-btn{
+      cursor:pointer;
+    }
+
+    #file-icon {
+      border-radius: 0;
+      font-size: 20px;
+      margin-top: 15px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #remove-btn {
+      padding: 8px 12px;
+      margin-top: 5px;
+    }
+
+    #remove-btn .bi-trash{
+      font-size: 20px;
     }
 
     /* .upload-form input[type="submit"] {
@@ -69,6 +90,8 @@
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('upload-form');
       const fileInput = document.getElementById('planilha');
+      const fileIcon = document.getElementById('file-icon');
+      const removeBtn = document.getElementById('remove-btn');
 
       form.addEventListener('submit', function(event) {
         if (!fileInput.value) {
@@ -76,15 +99,30 @@
           alert('Por favor, selecione um arquivo antes de enviar.');
         }
       });
+
+      fileInput.addEventListener('change', function() {
+        removeBtn.classList.remove('d-none');
+      });
+
+      removeBtn.addEventListener('click', function() {
+        fileInput.value = ''; // Limpa o valor do input de arquivo
+        removeBtn.classList.add('d-none'); // Esconde o botão de remoção
+      });
     });
   </script>
 </head>
 <body>
   <h1>Upload de Planilha</h1>
-  <div class="upload-form">
-    <form action="/upload" method="post" class="d-sm-flex flex-column" enctype="multipart/form-data" id="upload-form">
-      <label for="planilha" class="form-label">Selecione uma planilha:</label>
-      <input type="file" name="planilha" class="form-control form-control-lg" id="planilha" accept=".xlsx" required>
+  <div class="upload-form col-md-4">
+    <form action="/upload" method="post" class="d-flex flex-column" enctype="multipart/form-data" id="upload-form">
+      <label for="planilha" class="form-label text-muted">Selecione uma planilha:</label>
+      <div class="input-group align-items-center">
+        <label for="planilha" id="file-icon" class="input-group-text bi bi-filetype-xlsx"></label> <!-- Adiciona um <span> para conter o ícone -->
+        <input  placeholder="inserir" type="file" name="planilha" class="form-control form-control-lg" id="planilha" accept=".xlsx" required>
+        <button type="button" class="btn btn-danger d-none" id="remove-btn">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
       <input type="submit" value="Enviar" class="btn btn-success p-2 mt-3">
     </form>
   </div>
