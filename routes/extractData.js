@@ -22,11 +22,11 @@ async function extrairDados(planilhaBuffer) {
 
     // Itera sobre os dados da planilha
     for (let i = 0; i < data.length; i++) {
-      const email = data[i][0];
-      const primeiroNome = removeAccents(data[i][1]).toUpperCase();
-      const ultimoNome = removeAccents(data[i][2]).toUpperCase();
-      const funcao = data[i][3];
-      let cpf = data[i][4];
+      const email = data[i][1];
+      const primeiroNome = removeAccents(data[i][3]).toUpperCase();
+      const ultimoNome = removeAccents(data[i][4]).toUpperCase();
+      const funcao = data[i][5];
+      let cpf = data[i][11];
 
       // Verifica se o CPF está presente
       if (cpf) {
