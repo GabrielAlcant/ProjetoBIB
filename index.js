@@ -53,6 +53,8 @@ app.post('/upload', upload.single('planilha'), async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log('Servidor iniciado na porta 3000.'); // Inicia o servidor na porta 3000
+const port = 8080
+
+app.listen(port, () => {
+  console.log(`Servidor iniciado na porta ${port}.`); // Inicia o servidor na porta especificada
 });
