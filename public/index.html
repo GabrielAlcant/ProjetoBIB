@@ -107,7 +107,26 @@
       removeBtn.addEventListener('click', function() {
         fileInput.value = ''; // Limpa o valor do input de arquivo
         removeBtn.classList.add('d-none'); // Esconde o botão de remoção
+        $("#infoLinhas").addClass('d-none')
       });
+
+      $("#planilha").on("change", function(event){
+        // Criando o fileReader
+        var reader = new FileReader();
+
+        reader.onloadend = function(event) {
+          lines = event.target.result.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+          console.log(lines)
+          const $infoLinhas = $("#infoLinhas")
+          $infoLinhas.find("span").text(`Esta planilha possui ${lines.length - 1} linhas.`)
+          $infoLinhas.removeClass("d-none")
+        }
+        
+        // getting File instance
+        var file = event.target.files[0];
+
+        reader.readAsText(file)
+      })
     });
   </script>
 </head>
@@ -122,6 +141,11 @@
         <button type="button" class="btn btn-danger d-none" id="remove-btn">
           <i class="bi bi-trash"></i>
         </button>
+      </div>
+      <div class="mt-2 text-center">
+        <p class="d-none font-weight-bold text-muted" id="infoLinhas">
+          <i class="bi bi-info-circle"></i> <span></span>
+        </p>
       </div>
       <input type="submit" value="Enviar" class="btn btn-success p-2 mt-3">
     </form>
